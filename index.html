@@ -5,69 +5,125 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Workout Tracker</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 16px; background: #f5f5f5; }
-    h1 { text-align: center; }
-    .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    button { padding: 8px 12px; border-radius: 8px; border: none; background: #007aff; color: white; font-size: 16px; }
-    input { width: 60px; padding: 6px; margin-left: 6px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 16px; background: #f2f2f7; }
+    h1, h2 { text-align: center; }
+    .card { background: white; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    button { padding: 10px 14px; border-radius: 10px; border: none; background: #007aff; color: white; font-size: 16px; }
+    input { width: 60px; padding: 6px; }
     .set { display: flex; align-items: center; justify-content: space-between; margin: 6px 0; }
+    .nav { display: flex; justify-content: space-around; margin-bottom: 12px; }
+    .nav button { background: #e5e5ea; color: black; }
+    .timer { text-align: center; font-size: 32px; margin: 12px 0; }
+    .small { font-size: 14px; color: #666; }
   </style>
 </head>
 <body>
-  <h1>Workout van vandaag</h1>
 
-  <div id="workouts"></div>
+<h1>Workout App</h1>
 
-  <button onclick="addExercise()">➕ Oefening toevoegen</button>
+<div class="nav">
+  <button onclick="showScreen('today')">Workout</button>
+  <button onclick="showScreen('history')">Historiek</button>
+</div>
 
-  <script>
-    const defaultExercises = [
-      { name: 'Push-ups', sets: [0,0,0] },
-      { name: 'Pull-ups', sets: [0,0,0] },
-      { name: 'Goblet Squats', sets: [0,0,0] }
-    ];
+<!-- WORKOUT VAN VANDAAG -->
+<div id="today" class="screen">
+  <h2>Workout van vandaag</h2>
+  <div id="workout"></div>
+  <button onclick="saveWorkout()">Workout opslaan</button>
 
-    let exercises = JSON.parse(localStorage.getItem('exercises')) || defaultExercises;
+  <div class="timer" id="timer">60</div>
+  <button onclick="startTimer()">⏱️ Start rusttimer</button>
+</div>
 
-    function save() {
-      localStorage.setItem('exercises', JSON.stringify(exercises));
-    }
+<!-- HISTORIEK -->
+<div id="history" class="screen" style="display:none">
+  <h2>Workout historiek</h2>
+  <div id="historyList"></div>
+</div>
 
-    function render() {
-      const container = document.getElementById('workouts');
-      container.innerHTML = '';
+<script>
+  const defaultExercises = [
+    { name: 'Push-ups', sets: [0,0,0] },
+    { name: 'Pull-ups', sets: [0,0,0] },
+    { name: 'Goblet Squats', sets: [0,0,0] },
+    { name: 'Core Wheel', sets: [0,0,0] }
+  ];
 
-      exercises.forEach((ex, i) => {
-        const card = document.createElement('div');
-        card.className = 'card';
+  let exercises = JSON.parse(localStorage.getItem('currentWorkout')) || defaultExercises;
+  let history = JSON.parse(localStorage.getItem('history')) || [];
 
-        card.innerHTML = `<h3>${ex.name}</h3>`;
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+    document.getElementById(id).style.display = 'block';
+    if (id === 'history') renderHistory();
+  }
 
-        ex.sets.forEach((rep, s) => {
-          const setDiv = document.createElement('div');
-          setDiv.className = 'set';
-          setDiv.innerHTML = `Set ${s+1}: <input type="number" value="${rep}" onchange="updateSet(${i},${s},this.value)" /> reps`;
-          card.appendChild(setDiv);
-        });
-
-        container.appendChild(card);
+  function renderWorkout() {
+    const container = document.getElementById('workout');
+    container.innerHTML = '';
+    exercises.forEach((ex, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<h3>${ex.name}</h3>`;
+      ex.sets.forEach((rep, s) => {
+        const div = document.createElement('div');
+        div.className = 'set';
+        div.innerHTML = `Set ${s+1}: <input type="number" value="${rep}" onchange="updateSet(${i},${s},this.value)"> reps`;
+        card.appendChild(div);
       });
-    }
+      container.appendChild(card);
+    });
+  }
 
-    function updateSet(i, s, value) {
-      exercises[i].sets[s] = Number(value);
-      save();
-    }
+  function updateSet(i,s,val) {
+    exercises[i].sets[s] = Number(val);
+    localStorage.setItem('currentWorkout', JSON.stringify(exercises));
+  }
 
-    function addExercise() {
-      const name = prompt('Naam van oefening');
-      if (!name) return;
-      exercises.push({ name, sets: [0,0,0] });
-      save();
-      render();
-    }
+  function saveWorkout() {
+    const entry = {
+      date: new Date().toLocaleDateString(),
+      exercises: JSON.parse(JSON.stringify(exercises))
+    };
+    history.unshift(entry);
+    localStorage.setItem('history', JSON.stringify(history));
+    alert('Workout opgeslagen');
+  }
 
-    render();
-  </script>
+  function renderHistory() {
+    const container = document.getElementById('historyList');
+    container.innerHTML = '';
+    history.forEach(w => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<strong>${w.date}</strong>`;
+      w.exercises.forEach(ex => {
+        const best = Math.max(...ex.sets);
+        const p = document.createElement('p');
+        p.className = 'small';
+        p.textContent = `${ex.name}: beste set ${best} reps`;
+        card.appendChild(p);
+      });
+      container.appendChild(card);
+    });
+  }
+
+  let time = 60;
+  let timer;
+  function startTimer() {
+    clearInterval(timer);
+    time = 60;
+    document.getElementById('timer').textContent = time;
+    timer = setInterval(() => {
+      time--;
+      document.getElementById('timer').textContent = time;
+      if (time <= 0) clearInterval(timer);
+    }, 1000);
+  }
+
+  renderWorkout();
+</script>
+
 </body>
 </html>
