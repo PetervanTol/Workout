@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workout Tracker</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 16px; background: #f5f5f5; }
+    h1 { text-align: center; }
+    .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    button { padding: 8px 12px; border-radius: 8px; border: none; background: #007aff; color: white; font-size: 16px; }
+    input { width: 60px; padding: 6px; margin-left: 6px; }
+    .set { display: flex; align-items: center; justify-content: space-between; margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <h1>Workout van vandaag</h1>
+
+  <div id="workouts"></div>
+
+  <button onclick="addExercise()">➕ Oefening toevoegen</button>
+
+  <script>
+    const defaultExercises = [
+      { name: 'Push-ups', sets: [0,0,0] },
+      { name: 'Pull-ups', sets: [0,0,0] },
+      { name: 'Goblet Squats', sets: [0,0,0] }
+    ];
+
+    let exercises = JSON.parse(localStorage.getItem('exercises')) || defaultExercises;
+
+    function save() {
+      localStorage.setItem('exercises', JSON.stringify(exercises));
+    }
+
+    function render() {
+      const container = document.getElementById('workouts');
+      container.innerHTML = '';
+
+      exercises.forEach((ex, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        card.innerHTML = `<h3>${ex.name}</h3>`;
+
+        ex.sets.forEach((rep, s) => {
+          const setDiv = document.createElement('div');
+          setDiv.className = 'set';
+          setDiv.innerHTML = `Set ${s+1}: <input type="number" value="${rep}" onchange="updateSet(${i},${s},this.value)" /> reps`;
+          card.appendChild(setDiv);
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    function updateSet(i, s, value) {
+      exercises[i].sets[s] = Number(value);
+      save();
+    }
+
+    function addExercise() {
+      const name = prompt('Naam van oefening');
+      if (!name) return;
+      exercises.push({ name, sets: [0,0,0] });
+      save();
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
